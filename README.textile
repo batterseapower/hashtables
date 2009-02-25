@@ -1,0 +1,27 @@
+h1. Hashtables For Haskell
+
+You can help improve this README with extra snippets and advice by using the "GitHub wiki":http://github.com/batterseapower/hashtables/wikis/readme.
+
+
+h2. Installing
+
+To just install the library:
+
+<pre>
+<code>runghc Setup.lhs configure
+runghc Setup.lhs build
+sudo runghc Setup.lhs install
+</pre>
+</code>
+
+
+h2. Description
+
+PLACEHOLDER
+
+
+h2. Linkage
+
+* "Hackage":http://hackage.haskell.org/cgi-bin/hackage-scripts/package/hashtables
+* "Bug Tracker":http://bsp.lighthouseapp.com/projects/26152-hs-hashtables
+* "GitHub":http://github.com/batterseapower/hashtables
