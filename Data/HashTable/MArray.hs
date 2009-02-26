@@ -12,15 +12,16 @@ import Control.Monad.Ref
 
 import Data.Array.MArray
 
--- TODO: specialisations
-import qualified Data.Array.IO ( IOArray, IOUArray )
-import qualified Data.Array.ST ( STArray, STUArray )
+-- For specialisation purposes:
+import Data.Array.IO ( IOArray )
+import Data.Array.ST ( STArray )
 
 import Data.Bits ( (.&.) )
 import Data.Int  ( Int32 )
 import Data.List ( maximumBy, partition )
 
 import Control.Monad
+import Control.Monad.ST ( ST )
 
 import Prelude hiding ( lookup )
 
@@ -66,6 +67,8 @@ hYSTERESIS = 64
 -- | Creates a new, empty, hash table
 new :: (MonadRef m, MArray arr (ArrayElement key val) m)
     => m (HashTable arr m key val)
+{-# SPECIALIZE new :: IO (HashTable IOArray IO key val) #-}
+{-# SPECIALIZE new :: ST s (HashTable (STArray s) (ST s) key val) #-}
 new = do
     -- Make a new hash table with a single, empty, segment
     let mask = tABLE_MIN - 1
@@ -87,6 +90,12 @@ new = do
 -- you need to update a mapping, then we provide 'update'.
 insert :: (Hashable key, MonadRef m, MArray arr (ArrayElement key val) m)
        => HashTable arr m key val -> key -> val -> m ()
+{-# SPECIALIZE insert :: Hashable key => HashTable IOArray IO key val -> key -> val -> IO () #-}
+{-# SPECIALIZE insert :: Hashable key => HashTable (STArray s) (ST s) key val -> key -> val -> ST s () #-}
+{-# SPECIALIZE insert :: HashTable IOArray IO Int val -> Int -> val -> IO () #-}
+{-# SPECIALIZE insert :: HashTable (STArray s) (ST s) Int val -> Int -> val -> ST s () #-}
+{-# SPECIALIZE insert :: Hashable key => HashTable IOArray IO [key] val -> [key] -> val -> IO () #-}
+{-# SPECIALIZE insert :: Hashable key => HashTable (STArray s) (ST s) [key] val -> [key] -> val -> ST s () #-}
 insert ht key val = updatingBucket CanInsert bucket_fn ht key
   where bucket_fn bucket = ((key,val):bucket, 1, ())
 
@@ -170,6 +179,7 @@ updatingBucket can_enlarge bucket_fn ht@(HashTable tab_ref) key = do
 -- | Rehashes the hashtable into a new one to reduce the load factor
 expandHashTable :: (Hashable key, MArray arr (ArrayElement key val) m)
                 => HT arr m key val -> m (HT arr m key val)
+{-# INLINE expandHashTable #-} -- INLINE into updatingBucket use site to benefit from specialisation there
 expandHashTable table@(HT{ buckets=bkts, bmask=mask })
   | newmask > tABLE_MAX-1 = return table -- We don't allow the number of buckets to expand beyond a certain size
   | otherwise = do
@@ -208,6 +218,12 @@ deleteBucket del (pair@(k,_):bucket) =
 -- | Remove an entry from the hash table
 delete :: (Hashable key, MonadRef m, MArray arr (ArrayElement key val) m)
        => HashTable arr m key val -> key -> m ()
+{-# SPECIALIZE delete :: Hashable key => HashTable IOArray IO key val -> key -> IO () #-}
+{-# SPECIALIZE delete :: Hashable key => HashTable (STArray s) (ST s) key val -> key -> ST s () #-}
+{-# SPECIALIZE delete :: HashTable IOArray IO Int val -> Int -> IO () #-}
+{-# SPECIALIZE delete :: HashTable (STArray s) (ST s) Int val -> Int -> ST s () #-}
+{-# SPECIALIZE delete :: Hashable key => HashTable IOArray IO [key] val -> [key] -> IO () #-}
+{-# SPECIALIZE delete :: Hashable key => HashTable (STArray s) (ST s) [key] val -> [key] -> ST s () #-}
 delete ht key = updatingBucket CantInsert (deleteBucket (key ==)) ht key
 
 
@@ -224,6 +240,12 @@ delete ht key = updatingBucket CantInsert (deleteBucket (key ==)) ht key
 -- by 'insert'.
 update :: (Hashable key, MonadRef m, MArray arr (ArrayElement key val) m)
        => HashTable arr m key val -> key -> val -> m Bool
+{-# SPECIALIZE update :: Hashable key => HashTable IOArray IO key val -> key -> val -> IO Bool #-}
+{-# SPECIALIZE update :: Hashable key => HashTable (STArray s) (ST s) key val -> key -> val -> ST s Bool #-}
+{-# SPECIALIZE update :: HashTable IOArray IO Int val -> Int -> val -> IO Bool #-}
+{-# SPECIALIZE update :: HashTable (STArray s) (ST s) Int val -> Int -> val -> ST s Bool #-}
+{-# SPECIALIZE update :: Hashable key => HashTable IOArray IO [key] val -> [key] -> val -> IO Bool #-}
+{-# SPECIALIZE update :: Hashable key => HashTable (STArray s) (ST s) [key] val -> [key] -> val -> ST s Bool #-}
 update ht key val = updatingBucket CanInsert bucket_fn ht key
   where bucket_fn bucket = let (bucket', dels, _) = deleteBucket (key ==) bucket
                            in  ((key, val):bucket', 1 + dels, dels /= 0)
@@ -235,6 +257,12 @@ update ht key val = updatingBucket CanInsert bucket_fn ht key
 -- | Looks up the value of a key in the hash table.
 lookup :: (Hashable key, MonadRef m, MArray arr (ArrayElement key val) m)
        => HashTable arr m key val -> key -> m (Maybe val)
+{-# SPECIALIZE lookup :: Hashable key => HashTable IOArray IO key val -> key -> IO (Maybe val) #-}
+{-# SPECIALIZE lookup :: Hashable key => HashTable (STArray s) (ST s) key val -> key -> ST s (Maybe val) #-}
+{-# SPECIALIZE lookup :: HashTable IOArray IO Int val -> Int -> IO (Maybe val) #-}
+{-# SPECIALIZE lookup :: HashTable (STArray s) (ST s) Int val -> Int -> ST s (Maybe val) #-}
+{-# SPECIALIZE lookup :: Hashable key => HashTable IOArray IO [key] val -> [key] -> IO (Maybe val) #-}
+{-# SPECIALIZE lookup :: Hashable key => HashTable (STArray s) (ST s) [key] val -> [key] -> ST s (Maybe val) #-}
 lookup ht key = do
   (_, _, bucket) <- findBucket ht key
   let firstHit (k,v) r | key == k  = Just v
@@ -248,6 +276,12 @@ lookup ht key = do
 -- | Convert a list of key\/value pairs into a hash table
 fromList :: (Hashable key, MonadRef m, MArray arr (ArrayElement key val) m)
          => [(key, val)] -> m (HashTable arr m key val)
+{-# SPECIALIZE fromList :: Hashable key => [(key, val)] -> IO (HashTable IOArray IO key val) #-}
+{-# SPECIALIZE fromList :: Hashable key => [(key, val)] -> ST s (HashTable (STArray s) (ST s) key val) #-}
+{-# SPECIALIZE fromList :: [(Int, val)] -> IO (HashTable IOArray IO Int val) #-}
+{-# SPECIALIZE fromList :: [(Int, val)] -> ST s (HashTable (STArray s) (ST s) Int val) #-}
+{-# SPECIALIZE fromList :: Hashable key => [([key], val)] -> IO (HashTable IOArray IO [key] val) #-}
+{-# SPECIALIZE fromList :: Hashable key => [([key], val)] -> ST s (HashTable (STArray s) (ST s) [key] val) #-}
 fromList list = do
   table <- new
   sequence_ [ insert table k v | (k, v) <- list ]
@@ -256,14 +290,16 @@ fromList list = do
 -- | Converts a hash table to a list of key\/value pairs
 toList :: (MonadRef m, MArray arr (ArrayElement key val) m)
        => HashTable arr m key val -> m [(key, val)]
+{-# SPECIALIZE toList :: HashTable IOArray IO key val -> IO [(key, val)] #-}
+{-# SPECIALIZE toList :: HashTable (STArray s) (ST s) key val -> ST s [(key, val)] #-}
 toList = mapReduce id concat
 
-{-# INLINE mapReduce #-}
 mapReduce :: (MonadRef m, MArray arr (ArrayElement key val) m)
           => ([(key, val)] -> r) -- ^ Mapping function - process bucket
           -> ([r] -> r)          -- ^ Reducing function - combine buckets
           -> HashTable arr m key val
           -> m r
+{-# INLINE mapReduce #-}
 mapReduce m r (HashTable tab_ref ) = do
   HT { buckets=bckts, bmask=b } <- readRef tab_ref
   liftM r (mapM (liftM m . readArray bckts) [0..b])
