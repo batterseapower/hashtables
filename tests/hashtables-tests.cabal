@@ -21,6 +21,7 @@ Executable hashtables-tests
                                 split >= 0.1,
                                 test-framework >= 0.2,
                                 test-framework-quickcheck2 >= 0.2,
+                                QuickCheck >= 2.0,
                                 hashtables >= 0.1
         
         Extensions:             ScopedTypeVariables,
