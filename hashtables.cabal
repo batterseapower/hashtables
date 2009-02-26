@@ -19,8 +19,9 @@ Flag SplitBase
 
 
 Library
-        Exposed-Modules:        Data.Hashable
-                                Data.HashTable.Array
+        Exposed-Modules:        Control.Monad.Ref
+                                Data.Hashable
+                                Data.HashTable.MArray
         
         Other-Modules:          
         
@@ -29,6 +30,8 @@ Library
         else
                 Build-Depends:  base < 3
         
-        Extensions:             PatternSignatures
+        Extensions:             FlexibleContexts
+                                PatternSignatures
+                                TypeFamilies
         
         Ghc-Options:            -Wall
