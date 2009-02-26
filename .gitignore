@@ -3,6 +3,6 @@
 Thumbs.db
 
 # Generated files
-dist/
+*dist/
 *.hi
 *.o

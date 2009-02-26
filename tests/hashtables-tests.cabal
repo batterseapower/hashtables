@@ -1,0 +1,27 @@
+Name:               hashtables-tests
+Version:            0.1
+Cabal-Version:      >= 1.2
+Category:           Data Structures
+Synopsis:           Tests for the hashtables package
+License:            BSD3
+License-File:       LICENSE
+Author:             Max Bolingbroke
+Maintainer:         batterseapower@hotmail.com
+Homepage:           http://github.com/batterseapower/hashtables
+Build-Type:         Simple
+
+
+Executable hashtables-tests
+        Main-Is:                Main.hs
+        
+        Build-Depends:          base >= 3,
+                                containers >= 0.1.0.1,
+                                array >= 0.1,
+                                template-haskell >= 2.3,
+                                split >= 0.1,
+                                test-framework >= 0.2,
+                                test-framework-quickcheck2 >= 0.2,
+                                hashtables >= 0.1
+        
+        Extensions:             ScopedTypeVariables,
+                                TemplateHaskell
