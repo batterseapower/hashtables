@@ -91,3 +91,15 @@ instance Hashable a => Hashable [a] where
     -- for combining together multiple keys to form one.
     int32Hash xs = foldl' go golden xs
       where go h x = int32Hash x + int32Hash h
+
+instance (Hashable a, Hashable b) => Hashable (a, b) where
+    int32Hash (a, b) = int32Hash a + int32Hash (int32Hash b + int32Hash golden)
+
+instance (Hashable a, Hashable b, Hashable c) => Hashable (a, b, c) where
+    int32Hash (a, b, c) = int32Hash a + int32Hash (int32Hash b + int32Hash (int32Hash c + int32Hash golden))
+
+instance (Hashable a, Hashable b, Hashable c, Hashable d) => Hashable (a, b, c, d) where
+    int32Hash (a, b, c, d) = int32Hash a + int32Hash (int32Hash b + int32Hash (int32Hash c + int32Hash (int32Hash d + int32Hash golden)))
+    
+instance (Hashable a, Hashable b, Hashable c, Hashable d, Hashable e) => Hashable (a, b, c, d, e) where
+    int32Hash (a, b, c, d, e) = int32Hash a + int32Hash (int32Hash b + int32Hash (int32Hash c + int32Hash (int32Hash d + int32Hash (int32Hash e + int32Hash golden))))
